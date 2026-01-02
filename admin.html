@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block body %}
+<h3 class="mb-3">Admin Panel</h3>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h6>Cameras</h6>
+      <ul class="small">
+        {% for cam in cameras %}
+        <li>{{ cam.name }} ({{ cam.source_type }}, active={{ cam.active }})</li>
+        {% endfor %}
+      </ul>
+      <form method="post" action="{{ url_for('add_camera') }}">
+        <div class="mb-2">
+          <label class="form-label small">Name</label>
+          <input name="name" class="form-control form-control-sm" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Source Type</label>
+          <select name="source_type" class="form-select form-select-sm">
+            <option value="webcam">Webcam</option>
+            <option value="video">Video</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Source Path (for video)</label>
+          <input name="source_path" class="form-control form-control-sm">
+        </div>
+        <button class="btn btn-sm btn-primary">Add Camera</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h6>Zones & Threshold</h6>
+      <form method="post" action="{{ url_for('update_thresholds') }}">
+        {% for zm in zones_meta %}
+        <div class="mb-2 d-flex align-items-center">
+          <div class="me-2 small">Zone {{ zm.zone_id }} ({{ zm.name }})</div>
+          <input name="threshold_{{ zm.zone_id }}" type="number"
+                 class="form-control form-control-sm" style="width:80px"
+                 value="{{ zm.threshold }}">
+        </div>
+        {% endfor %}
+        <button class="btn btn-sm btn-primary mt-2">Save Thresholds</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h6>Reports</h6>
+      <form method="get" action="{{ url_for('export_csv') }}">
+        <div class="mb-2">
+          <label class="form-label small">Last N Minutes</label>
+          <input name="minutes" type="number" class="form-control form-control-sm" value="60">
+        </div>
+        <button class="btn btn-sm btn-success">Download CSV</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

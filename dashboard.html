@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <div class="text-muted small">Total People Now</div>
+      <h1 id="total-now">--</h1>
+      <div class="text-muted small">Auto-updates every second</div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-2">Zone Wise Occupancy</div>
+      <div class="row g-2" id="zones-row"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card p-3 mb-4">
+  <div class="d-flex justify-content-between">
+    <div class="text-muted small">Alerts</div>
+  </div>
+  <ul id="alerts-list" class="mb-3 small"></ul>
+
+  <div class="text-muted small mb-2">People Details (updated every second)</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th style="width:80px;">ID</th>
+          <th style="width:100px;">Zone</th>
+          <th>X, Y</th>
+          <th style="width:120px;">Last Time</th>
+        </tr>
+      </thead>
+      <tbody id="people-body">
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+const totalNowEl = document.getElementById("total-now");
+const zonesRowEl = document.getElementById("zones-row");
+const alertsListEl = document.getElementById("alerts-list");
+const peopleBodyEl = document.getElementById("people-body");
+let zoneCards = {};
+
+function renderZonesOnce(zonesNow) {
+  zonesRowEl.innerHTML = "";
+  zoneCards = {};
+  const ids = Object.keys(zonesNow).sort((a,b)=>Number(a)-Number(b));
+  ids.forEach((id) => {
+    const col = document.createElement("div");
+    col.className = "col-6 col-md-3";
+    col.innerHTML = `
+      <div class="card p-2 h-100 text-center">
+        <div class="text-muted small mb-1">Zone ${id}</div>
+        <div style="font-size:1.8rem;" id="zone-${id}-val">--</div>
+      </div>
+    `;
+    zonesRowEl.appendChild(col);
+    zoneCards[id] = document.getElementById("zone-" + id + "-val");
+  });
+}
+
+function renderPeopleTable(people) {
+  peopleBodyEl.innerHTML = "";
+  const ids = Object.keys(people).sort((a,b)=>Number(a)-Number(b));
+  ids.forEach(id => {
+    const p = people[id];
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>ID ${id}</td>
+      <td>${p.zone !== null ? "Zone " + p.zone : "-"}</td>
+      <td class="small text-muted">${p.x}, ${p.y}</td>
+      <td class="small text-muted">${p.t}</td>
+    `;
+    peopleBodyEl.appendChild(tr);
+  });
+}
+
+async function fetchState() {
+  try {
+    const res = await axios.get("/get_state");
+    const data = res.data;
+
+    totalNowEl.textContent = data.total_now ?? 0;
+
+    const zonesNow = data.zones_now || {};
+    if (Object.keys(zoneCards).length === 0 && Object.keys(zonesNow).length > 0) {
+      renderZonesOnce(zonesNow);
+    }
+    Object.entries(zonesNow).forEach(([zid, val]) => {
+      if (zoneCards[zid]) zoneCards[zid].textContent = val;
+    });
+
+    const alerts = data.alerts || [];
+    alertsListEl.innerHTML = "";
+    alerts.forEach(a => {
+      const li = document.createElement("li");
+      li.textContent = a;
+      alertsListEl.appendChild(li);
+    });
+
+    const people = data.people || {};
+    renderPeopleTable(people);
+  } catch (e) {
+    console.error(e);
+  }
+}
+setInterval(fetchState, 1000);
+fetchState();
+</script>
+{% endblock %}
